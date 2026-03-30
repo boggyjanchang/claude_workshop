@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supplier Query System (Workshop Demo)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7fa; color: #333; min-height: 100vh; }
+
+    .header { background: linear-gradient(135deg, #00b4d8, #0077b6); color: white; padding: 24px 32px; }
+    .header h1 { font-size: 22px; font-weight: 600; }
+    .header p { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+
+    .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+
+    .search-box { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
+    .search-box h2 { font-size: 16px; margin-bottom: 16px; color: #0077b6; }
+
+    .search-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 13px; font-weight: 500; color: #555; }
+    .field select, .field input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; min-width: 180px; }
+    .field select:focus, .field input:focus { outline: none; border-color: #00b4d8; box-shadow: 0 0 0 3px rgba(0,180,216,0.15); }
+
+    .btn-search { background: #0077b6; color: white; border: none; padding: 9px 28px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s; align-self: flex-end; }
+    .btn-search:hover { background: #005f8a; }
+
+    .result-area { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+    .result-header { padding: 16px 24px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    .result-header h2 { font-size: 16px; color: #0077b6; }
+    .result-count { font-size: 13px; color: #888; }
+
+    .placeholder { padding: 60px 24px; text-align: center; color: #aaa; }
+    .placeholder .icon { font-size: 48px; margin-bottom: 12px; }
+    .placeholder p { font-size: 14px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: #f8f9fb; padding: 12px 16px; text-align: left; font-size: 13px; font-weight: 600; color: #555; border-bottom: 2px solid #eee; }
+    tbody td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+    tbody tr:hover { background: #f8fbff; }
+
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-approved { background: #d4edda; color: #155724; }
+    .status-rejected { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Supplier Management System</h1>
+    <p>Workshop Demo</p>
+  </div>
+
+  <div class="container">
+    <div class="search-box">
+      <h2>Search Filters</h2>
+      <div class="search-row">
+        <div class="field">
+          <label for="status">Status</label>
+          <select id="status">
+            <option value="">-- Select --</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="country">Country</label>
+          <select id="country">
+            <option value="">All</option>
+            <option value="Japan">Japan</option>
+            <option value="South Korea">South Korea</option>
+            <option value="Hong Kong">Hong Kong</option>
+            <option value="Thailand">Thailand</option>
+            <option value="Singapore">Singapore</option>
+            <option value="Indonesia">Indonesia</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="keyword">Keyword</label>
+          <input type="text" id="keyword" placeholder="Supplier name or contact">
+        </div>
+        <button class="btn-search" id="searchBtn" onclick="doSearch()">Search</button>
+      </div>
+    </div>
+
+    <div class="result-area">
+      <div class="result-header">
+        <h2>Results</h2>
+        <span class="result-count" id="resultCount"></span>
+      </div>
+      <div id="resultBody">
+        <div class="placeholder">
+          <div class="icon">🔍</div>
+          <p>Please select search filters and click "Search"</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const suppliers = [
+      { name: "Universal Studios Japan", contact: "Taro Tanaka", email: "tanaka.taro@example-usj.co.jp", country: "Japan", status: "pending" },
+      { name: "JR East", contact: "Hanako Sato", email: "sato.hanako@example-jreast.co.jp", country: "Japan", status: "approved" },
+      { name: "Kidzania Tokyo", contact: "Ichiro Suzuki", email: "suzuki.ichiro@example-kidzania.co.jp", country: "Japan", status: "approved" },
+      { name: "Tokyo Disneyland", contact: "Misaki Yamada", email: "yamada.misaki@example-tdr.co.jp", country: "Japan", status: "approved" },
+      { name: "Hakone Freepass", contact: "Kenta Kobayashi", email: "kobayashi.kenta@example-hakone.co.jp", country: "Japan", status: "rejected" },
+      { name: "Lotte World", contact: "Minsu Kim", email: "kim.minsu@example-lotteworld.co.kr", country: "South Korea", status: "pending" },
+      { name: "Everland", contact: "Seoyeon Lee", email: "lee.seoyeon@example-everland.co.kr", country: "South Korea", status: "approved" },
+      { name: "Olive Young", contact: "Jihoon Park", email: "park.jihoon@example-oliveyoung.co.kr", country: "South Korea", status: "rejected" },
+      { name: "N Seoul Tower", contact: "Yujin Choi", email: "choi.yujin@example-nseoul.co.kr", country: "South Korea", status: "approved" },
+      { name: "Ocean Park", contact: "Tai Man Chan", email: "chan.taiman@example-oceanpark.com.hk", country: "Hong Kong", status: "approved" },
+      { name: "Hong Kong Disneyland", contact: "Jiaxin Li", email: "li.jiaxin@example-hkdl.com.hk", country: "Hong Kong", status: "approved" },
+      { name: "Cirque du Soleil Bangkok", contact: "Somchai Jaidee", email: "somchai.j@example-cirque-bkk.co.th", country: "Thailand", status: "pending" },
+      { name: "Erawan Shrine Day Tour", contact: "Pranee Suk", email: "pranee.s@example-bkktour.co.th", country: "Thailand", status: "rejected" },
+      { name: "Resorts World Sentosa", contact: "Wei Ming Tan", email: "tan.weiming@example-rws.com.sg", country: "Singapore", status: "approved" },
+      { name: "Universal Studios Singapore", contact: "Ah Kow Lim", email: "lim.ahkow@example-uss.com.sg", country: "Singapore", status: "approved" },
+      { name: "Waterbom Bali", contact: "Made Surya", email: "made.surya@example-waterbom.co.id", country: "Indonesia", status: "approved" },
+      { name: "Borobudur Tickets", contact: "Agus Santoso", email: "agus.s@example-borobudur.co.id", country: "Indonesia", status: "rejected" },
+    ];
+
+    const statusMap = { pending: "Pending", approved: "Approved", rejected: "Rejected" };
+    const statusClass = { pending: "status-pending", approved: "status-approved", rejected: "status-rejected" };
+
+    function doSearch() {
+      const status = document.getElementById("status").value;
+      const country = document.getElementById("country").value;
+      const keyword = document.getElementById("keyword").value.trim().toLowerCase();
+
+      let results = suppliers;
+      if (status) results = results.filter(s => s.status === status);
+      if (country) results = results.filter(s => s.country === country);
+      if (keyword) results = results.filter(s => s.name.toLowerCase().includes(keyword) || s.contact.toLowerCase().includes(keyword));
+
+      const body = document.getElementById("resultBody");
+      const count = document.getElementById("resultCount");
+
+      if (results.length === 0) {
+        body.innerHTML = '<div class="placeholder"><div class="icon">📭</div><p>No suppliers found matching your criteria</p></div>';
+        count.textContent = "";
+        return;
+      }
+
+      count.textContent = `${results.length} result(s)`;
+      body.innerHTML = `<table>
+        <thead><tr><th>Supplier Name</th><th>Contact Person</th><th>Email</th><th>Country</th><th>Status</th></tr></thead>
+        <tbody>${results.map(s => `<tr>
+          <td>${s.name}</td>
+          <td>${s.contact}</td>
+          <td>${s.email}</td>
+          <td>${s.country}</td>
+          <td><span class="status-badge ${statusClass[s.status]}">${statusMap[s.status]}</span></td>
+        </tr>`).join("")}</tbody>
+      </table>`;
+    }
+  </script>
+</body>
+</html>
