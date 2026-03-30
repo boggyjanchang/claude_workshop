@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BE2 ååå»ºç« Demo â Claude Workshop</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .step-line::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 100%;
+      width: 2rem;
+      height: 2px;
+      background: #e5e7eb;
+      transform: translateY(-50%);
+    }
+    .step-line.done::after { background: #6366f1; }
+    .api-log-item { animation: slideIn 0.3s ease; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid #e0e7ff;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    input[type="file"]::file-selector-button {
+      background: #6366f1; color: white;
+      border: none; padding: 6px 14px;
+      border-radius: 6px; cursor: pointer;
+      font-size: 13px; margin-right: 10px;
+    }
+    .preview-img { max-height: 120px; border-radius: 8px; border: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 sticky top-0 z-10">
+    <a href="index.html" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition" title="è¿å Workshop é¦é ">
+      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </a>
+    <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/>
+      </svg>
+    </div>
+    <div>
+      <h1 class="text-base font-semibold text-gray-900">BE2 ååå»ºç« Demo</h1>
+      <p class="text-xs text-gray-500">Claude Workshop â æ¨¡æ¬ååä¸æ¶æµç¨</p>
+    </div>
+    <div class="ml-auto flex items-center gap-3">
+      <label class="flex items-center gap-2 text-sm text-gray-600 select-none cursor-pointer">
+        <div class="relative">
+          <input type="checkbox" id="failToggle" class="sr-only peer" />
+          <div class="w-10 h-5 bg-gray-200 rounded-full peer-checked:bg-red-400 transition-colors"></div>
+          <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+        </div>
+        æ¨¡æ¬ API å¤±æ
+      </label>
+    </div>
+  </header>
+
+  <div class="max-w-3xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- Step Indicator -->
+    <div class="flex items-center justify-center gap-4 mb-2">
+      <div class="flex items-center gap-2" id="step1-indicator">
+        <div class="w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">1</div>
+        <span class="text-sm font-medium text-gray-700">å¡«å¯«ååè³è¨</span>
+      </div>
+      <div class="w-8 h-px bg-gray-300"></div>
+      <div class="flex items-center gap-2 opacity-40" id="step2-indicator">
+        <div class="w-7 h-7 rounded-full bg-gray-300 text-gray-500 text-xs font-bold flex items-center justify-center">2</div>
+        <span class="text-sm font-medium text-gray-500">ä¸å³åç</span>
+      </div>
+      <div class="w-8 h-px bg-gray-300"></div>
+      <div class="flex items-center gap-2 opacity-40" id="step3-indicator">
+        <div class="w-7 h-7 rounded-full bg-gray-300 text-gray-500 text-xs font-bold flex items-center justify-center">3</div>
+        <span class="text-sm font-medium text-gray-500">å»ºç«åå</span>
+      </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 border-b border-gray-100">
+        <h2 class="text-sm font-semibold text-indigo-800">åååºæ¬è³è¨</h2>
+        <p class="text-xs text-indigo-500 mt-0.5">å¡«å¯«å®ç¢å¾é»æãå»ºç«ååãï¼ç³»çµ±å°èªåå¼å«ä¸æ¯ API å®æä¸æ¶</p>
+      </div>
+
+      <form id="productForm" class="p-6 space-y-5" novalidate>
+        <!-- Row 1 -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">åååç¨± <span class="text-red-500">*</span></label>
+            <input type="text" name="product_name" placeholder="ä¾ï¼å°å101è§æ¯å°éç¥¨" required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ååèªç³» <span class="text-red-500">*</span></label>
+            <select name="language" required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white transition">
+              <option value="">è«é¸æ</option>
+              <option value="zh-TW">ç¹é«ä¸­æ (zh-TW)</option>
+              <option value="en">English (en)</option>
+              <option value="ja">æ¥æ¬èª (ja)</option>
+              <option value="ko">íêµ­ì´ (ko)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Row 2 -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">åååé¡ <span class="text-red-500">*</span></label>
+            <select name="category" required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white transition">
+              <option value="">è«é¸æ</option>
+              <option value="experience">é«é©æ´»å</option>
+              <option value="transfer">äº¤éæ¥é</option>
+              <option value="ticket">ç¥¨å¸</option>
+              <option value="tour">è¡ç¨</option>
+              <option value="accommodation">ä½å®¿</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ååé¡å <span class="text-red-500">*</span></label>
+            <select name="confirm_type" required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white transition">
+              <option value="">è«é¸æ</option>
+              <option value="instant">å³æç¢ºèª</option>
+              <option value="manual">äººå·¥ç¢ºèª</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ç¼ç¥¨é¡å <span class="text-red-500">*</span></label>
+            <select name="invoice_type" required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white transition">
+              <option value="">è«é¸æ</option>
+              <option value="e-invoice">é»å­ç¼ç¥¨</option>
+              <option value="paper">ç´æ¬ç¼ç¥¨</option>
+              <option value="exempt">åéç¼ç¥¨</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">å¹£å¥ <span class="text-red-500">*</span></label>
+            <select name="currency" required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white transition">
+              <option value="">è«é¸æ</option>
+              <option value="TWD">TWD æ°å°å¹£</option>
+              <option value="USD">USD ç¾å</option>
+              <option value="JPY">JPY æ¥å</option>
+              <option value="KRW">KRW éå</option>
+              <option value="HKD">HKD æ¸¯å¹£</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Row 4 -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ä¾æååç¨± <span class="text-red-500">*</span></label>
+            <input type="text" name="supplier" placeholder="ä¾ï¼å°å101è¡ä»½æéå¬å¸" required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ç®çå°åå¸ <span class="text-red-500">*</span></label>
+            <input type="text" name="destination" placeholder="ä¾ï¼å°å" required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" />
+          </div>
+        </div>
+
+        <!-- Row 5 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ååç°¡è¿° <span class="text-red-500">*</span></label>
+          <textarea name="description" rows="3" placeholder="è«è¼¸å¥ååçç°¡ç­ä»ç´¹ï¼å»ºè­° 50â150 å­ï¼" required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition resize-none"></textarea>
+        </div>
+
+        <!-- Row 6 â Image upload (API 1) -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            ååç¸®å <span class="text-red-500">*</span>
+            <span class="ml-2 text-xs font-normal text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">API #1 â åçä¸å³</span>
+          </label>
+          <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-indigo-400 transition" id="dropzone">
+            <input type="file" name="image" id="imageInput" accept="image/*" required class="w-full text-sm text-gray-500" />
+            <div id="imagePreviewWrap" class="mt-3 hidden">
+              <img id="imagePreview" class="preview-img mx-auto" />
+              <p class="text-xs text-gray-400 mt-1" id="imageFileName"></p>
+            </div>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">æ¯æ´ JPGãPNGãWEBPï¼å»ºè­°å°ºå¯¸ 800Ã600px</p>
+        </div>
+
+        <!-- Row 7 â Google Sheet URL -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Google Sheet URL
+            <span class="ml-2 text-xs font-normal text-green-600 bg-green-50 px-2 py-0.5 rounded-full">API #3 â åå¡« prod_oid</span>
+          </label>
+          <input type="url" name="sheet_url" placeholder="https://docs.google.com/spreadsheets/d/..."
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" />
+          <p class="text-xs text-gray-400 mt-1">å¡«å¯«å¾ï¼å»ºç«æåç prod_oid å°èªååå¯«è³æ­¤è©¦ç®è¡¨</p>
+        </div>
+
+        <!-- Submit -->
+        <div class="pt-2 flex items-center gap-3">
+          <button type="submit" id="submitBtn"
+            class="flex-1 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold rounded-xl py-3 px-6 text-sm transition flex items-center justify-center gap-2 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            å»ºç«åå
+          </button>
+          <button type="reset" id="resetBtn"
+            class="px-5 py-3 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition">
+            æ¸é¤
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- API Log Panel -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-800">API å¼å«ç´é</h3>
+          <p class="text-xs text-gray-400 mt-0.5">æ¯æ¬¡éåºå¾èªåè¨éï¼ç¨æ¼ HTTP Request æ¨¡å¼å­¸ç¿</p>
+        </div>
+        <button onclick="clearLog()" class="text-xs text-gray-400 hover:text-red-400 transition">æ¸é¤ç´é</button>
+      </div>
+      <div id="apiLog" class="divide-y divide-gray-50 max-h-80 overflow-y-auto">
+        <div class="px-6 py-8 text-center text-sm text-gray-400">å°ç¡ç´éï¼éåºè¡¨å®å¾å°é¡¯ç¤º API å¼å«æ ¼å¼</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Success Modal -->
+  <div id="successModal" class="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-[bounce_0.3s_ease]">
+      <div class="bg-gradient-to-br from-emerald-50 to-teal-50 px-8 py-7 text-center">
+        <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 mb-1">æ°å¢æå ð</h2>
+        <p class="text-sm text-gray-500">ååèç¨¿å·²å»ºç«ï¼prod_oid å·²åå¡«è³ Google Sheet</p>
+      </div>
+      <div class="px-8 py-5 space-y-3">
+        <div class="bg-gray-50 rounded-xl px-4 py-3 text-center">
+          <p class="text-xs text-gray-400 mb-0.5">prod_oid</p>
+          <p class="text-lg font-mono font-bold text-indigo-700" id="prodOidDisplay">â</p>
+        </div>
+        <a id="be2Link" href="#" target="_blank"
+          class="flex items-center justify-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 bg-indigo-50 rounded-lg py-2.5 transition font-medium">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+          å¨ BE2 æ¥çåå
+        </a>
+        <div class="text-xs text-gray-400 text-center" id="timingDisplay"></div>
+        <button onclick="closeModal('successModal')"
+          class="w-full bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-2.5 text-sm font-semibold transition mt-1">
+          ç¢ºèª
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Failure Modal -->
+  <div id="failModal" class="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+      <div class="bg-gradient-to-br from-red-50 to-orange-50 px-8 py-7 text-center">
+        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 mb-1">æ°å¢å¤±æ</h2>
+        <p class="text-sm text-gray-500">API åå³é 200 çæï¼ååæªå»ºç«</p>
+      </div>
+      <div class="px-8 py-5 space-y-3">
+        <div class="bg-red-50 rounded-xl px-4 py-3">
+          <p class="text-xs font-semibold text-red-600 mb-1">é¯èª¤è©³æ</p>
+          <p class="text-sm text-red-700 font-mono" id="failReason">â</p>
+        </div>
+        <p class="text-xs text-gray-400 text-center">è«ç¢ºèªæ¬ä½å¡«å¯«æ¯å¦æ­£ç¢ºï¼æè¯çµ¡ç³»çµ±ç®¡çå¡</p>
+        <button onclick="closeModal('failModal')"
+          class="w-full bg-red-500 hover:bg-red-600 text-white rounded-xl py-2.5 text-sm font-semibold transition">
+          éé
+        </button>
+      </div>
+    </div>
+  </div>öâ&W6¦RÖæöæR#ãÂ÷FWF&Và¢ÂöFcà ¢ÂÒÒ&÷rb(	BÖvRWÆöBÒÓà¢ÆFcà¢ÆÆ&VÂ6Æ73Ò&&Æö6²FWB×6ÒföçBÖÖVFVÒFWBÖw&ÓsÖ"Ó#à¢YXnY8{îYÉbÇ7â6Æ73Ò'FWB×&VBÓS#â£Â÷7ãà¢Ç7â6Æ73Ò&ÖÂÓ"FWB×2föçBÖæ÷&ÖÂFWBÖæFvòÓS&rÖæFvòÓSÓ"ÓãR&÷VæFVBÖgVÆÂ#ä3(	BYÉnx~K®X+3Â÷7ãà¢ÂöÆ&VÃà¢ÆFb6Æ73Ò&&÷&FW"Ó"&÷&FW"ÖF6VB&÷&FW"Öw&Ó3&÷VæFVBÖÆrÓBFWBÖ6VçFW"÷fW#¦&÷&FW"ÖæFvòÓCG&ç6Föâ"CÒ&G&÷¦öæR#à¢ÆçWBGSÒ&fÆR"æÖSÒ&ÖvR"CÒ&ÖvTçWB"66WCÒ&ÖvRò¢"&WV&VB6Æ73Ò'rÖgVÆÂFWB×6ÒFWBÖw&ÓS"óà¢ÆFbCÒ&ÖvU&WfWuw&"6Æ73Ò&×BÓ2FFVâ#à¢ÆÖrCÒ&ÖvU&WfWr"6Æ73Ò'&WfWrÖÖr×ÖWFò"óà¢Ç6Æ73Ò'FWB×2FWBÖw&ÓC×BÓ"CÒ&ÖvTfÆTæÖR#ãÂ÷à¢ÂöFcà¢ÂöFcà¢Ç6Æ73Ò'FWB×2FWBÖw&ÓC×BÓ#îiJþhûB¥~8ä~8tT%ûÈÎ[»®Û[®Zû9scÂ÷à¢ÂöFcà ¢ÂÒÒ&÷rr(	BvöövÆR6VWBU$ÂÒÓà¢ÆFcà¢ÆÆ&VÂ6Æ73Ò&&Æö6²FWB×6ÒföçBÖÖVFVÒFWBÖw&ÓsÖ"Ó#à¢vöövÆR6VWBU$À¢Ç7â6Æ73Ò&ÖÂÓ"FWB×2föçBÖæ÷&ÖÂFWBÖw&VVâÓc&rÖw&VVâÓSÓ"ÓãR&÷VæFVBÖgVÆÂ#ä32(	BY¹îZ²&öEööCÂ÷7ãà¢ÂöÆ&VÃà¢ÆçWBGSÒ'W&Â"æÖSÒ'6VWE÷W&Â"Æ6VöÆFW#Ò&GG3¢òöFö72ævöövÆRæ6öÒ÷7&VG6VWG2öBòâââ ¢6Æ73Ò'rÖgVÆÂ&÷&FW"&÷&FW"Öw&Ó3&÷VæFVBÖÆrÓ2Ó"FWB×6Òfö7W3¦÷WFÆæRÖæöæRfö7W3§&ærÓ"fö7W3§&ærÖæFvòÓCfö7W3¦&÷&FW"×G&ç7&VçBG&ç6Föâ"óà¢Ç6Æ73Ò'FWB×2FWBÖw&ÓC×BÓ#îZ¾Zú¾[èÎûÈÎ[»®z¸¾hX©þy¨B&öEööB[~z®X¹^Y¹îZú¾{>jÚNnzé~Â÷à¢ÂöFcà ¢ÂÒÒ7V&ÖBÒÓà¢ÆFb6Æ73Ò'BÓ"fÆWFV×2Ö6VçFW"vÓ2#à¢Æ'WGFöâGSÒ'7V&ÖB"CÒ'7V&ÖD'Fâ ¢6Æ73Ò&fÆWÓ&rÖæFvòÓc÷fW#¦&rÖæFvòÓs7FfS¦&rÖæFvòÓFWB×vFRföçB×6VÖ&öÆB&÷VæFVB×ÂÓ2ÓbFWB×6ÒG&ç6FöâfÆWFV×2Ö6VçFW"§W7FgÖ6VçFW"vÓ"6F÷r×6Ò#à¢Ç7fr6Æ73Ò'rÓBÓB"fÆÃÒ&æöæR"7G&ö¶SÒ&7W'&VçD6öÆ÷""fWt&÷Ò##B#B#à¢ÇF7G&ö¶RÖÆæV6Ò'&÷VæB"7G&ö¶RÖÆæV¦öãÒ'&÷VæB"7G&ö¶R×vGFÒ#""CÒ$Ó"GcfÓÓB"óà¢Â÷7fsà¢[»®z¸¾YXnY8¢Âö'WGFöãà¢Æ'WGFöâGSÒ'&W6WB"CÒ'&W6WD'Fâ ¢6Æ73Ò'ÓRÓ2FWB×6ÒföçBÖÖVFVÒFWBÖw&Óc&rÖw&Ó÷fW#¦&rÖw&Ó#&÷VæFVB×ÂG&ç6Föâ#à¢k^@¢Âö'WGFöãà¢ÂöFcà¢Âöf÷&Óà¢ÂöFcà ¢ÂÒÒÆöræVÂÒÓà¢ÆFb6Æ73Ò&&r×vFR&÷VæFVBÓ'Â6F÷r×6Ò&÷&FW"&÷&FW"Öw&Ó#÷fW&fÆ÷rÖFFVâ#à¢ÆFb6Æ73Ò'ÓbÓB&÷&FW"Ö"&÷&FW"Öw&ÓfÆWFV×2Ö6VçFW"§W7FgÖ&WGvVVâ#à¢ÆFcà¢Æ26Æ73Ò'FWB×6ÒföçB×6VÖ&öÆBFWBÖw&Ó#äYÎXú¾{HÈCÂö3à¢Ç6Æ73Ò'FWB×2FWBÖw&ÓC×BÓãR#îjøþjÊX{®[èÎz®X¹^ÈNûÈÎyJikÂEE&WVW7Bj[ÈþZÛ{ù#Â÷à¢ÂöFcà¢Æ'WGFöâöæ6Æ6³Ò&6ÆV$Æör"6Æ73Ò'FWB×2FWBÖw&ÓC÷fW#§FWB×&VBÓCG&ç6Föâ#îk^N{HÈCÂö'WGFöãà¢ÂöFcà¢ÆFbCÒ&Æör"6Æ73Ò&FfFR×FfFRÖw&ÓSÖÖÓ÷fW&fÆ÷r×ÖWFò#à¢ÆFb6Æ73Ò'ÓbÓFWBÖ6VçFW"FWB×6ÒFWBÖw&ÓC#î[	®xJ{HÈNûÈÎX{®Yjî[èÎ[~þzK¢YÎXú¾jÎ[ÈóÂöFcà¢ÂöFcà¢ÂöFcà ¢ÂöFcà ¢ÂÒÒ7V66W72ÖöFÂÒÓà¢ÆFbCÒ'7V66W74ÖöFÂ"6Æ73Ò&fVBç6WBÓ&rÖ&Æ6²&rÖ÷6GÓC&6¶G&÷Ö&ÇW"×6ÒfÆWFV×2Ö6VçFW"§W7FgÖ6VçFW"¢ÓSFFVâ#à¢ÆFb6Æ73Ò&&r×vFR&÷VæFVBÓ'Â6F÷rÓ'ÂrÖgVÆÂÖ×rÖÖB×ÓB÷fW&fÆ÷rÖFFVâæÖFRÕ¶&÷Væ6Uóã75öV6UÒ#à¢ÆFb6Æ73Ò&&rÖw&FVçB×FòÖ'"g&öÒÖVÖW&ÆBÓSFò×FVÂÓSÓÓrFWBÖ6VçFW"#à¢ÆFb6Æ73Ò'rÓbÓb&rÖVÖW&ÆBÓ&÷VæFVBÖgVÆÂfÆWFV×2Ö6VçFW"§W7FgÖ6VçFW"×ÖWFòÖ"ÓB#à¢Ç7fr6Æ73Ò'rÓÓFWBÖVÖW&ÆBÓS"fÆÃÒ&æöæR"7G&ö¶SÒ&7W'&VçD6öÆ÷""fWt&÷Ò##B#B#à¢ÇF7G&ö¶RÖÆæV6Ò'&÷VæB"7G&ö¶RÖÆæV¦öãÒ'&÷VæB"7G&ö¶R×vGFÒ#"ãR"CÒ$ÓR6ÃBDÃr"óà¢Â÷7fsà¢ÂöFcà¢Æ"6Æ73Ò'FWB×ÂföçBÖ&öÆBFWBÖw&ÓÖ"Ó#îikZ)îhX©ò	øèÂö#à¢Ç6Æ73Ò'FWB×6ÒFWBÖw&ÓS#îYXnY8Øzþ[{.[»®z¸¾ûÈÇ&öEööB[{.Y¹îZ¾{2vöövÆR6VWCÂ÷à¢ÂöFcà¢ÆFb6Æ73Ò'ÓÓR76R×Ó2#à¢ÆFb6Æ73Ò&&rÖw&ÓS&÷VæFVB×ÂÓBÓ2FWBÖ6VçFW"#à¢Ç6Æ73Ò'FWB×2FWBÖw&ÓCÖ"ÓãR#ç&öEööCÂ÷à¢Ç6Æ73Ò'FWBÖÆrföçBÖÖöæòföçBÖ&öÆBFWBÖæFvòÓs"CÒ'&öDöDF7Æ#î(	CÂ÷à¢ÂöFcà¢ÆCÒ&&S$Ææ²"&VcÒ"2"F&vWCÒ%ö&Ææ² ¢6Æ73Ò&fÆWFV×2Ö6VçFW"§W7FgÖ6VçFW"vÓ"FWB×6ÒFWBÖæFvòÓc÷fW#§FWBÖæFvòÓ&rÖæFvòÓS&÷VæFVBÖÆrÓ"ãRG&ç6FöâföçBÖÖVFVÒ#à¢Ç7fr6Æ73Ò'rÓBÓB"fÆÃÒ&æöæR"7G&ö¶SÒ&7W'&VçD6öÆ÷""fWt&÷Ò##B#B#à¢ÇF7G&ö¶RÖÆæV6Ò'&÷VæB"7G&ö¶RÖÆæV¦öãÒ'&÷VæB"7G&ö¶R×vGFÒ#""CÒ$Ódf""Ó"'c"""&"""Ó'bÓDÓBFfÓcfÓÓdÃB"óà¢Â÷7fsà¢YÊ$S"iú^yÈ¾YXnY8¢Âöà¢ÆFb6Æ73Ò'FWB×2FWBÖw&ÓCFWBÖ6VçFW""CÒ'FÖætF7Æ#ãÂöFcà¢Æ'WGFöâöæ6Æ6³Ò&6Æ÷6TÖöFÂw7V66W74ÖöFÂr ¢6Æ73Ò'rÖgVÆÂ&rÖVÖW&ÆBÓS÷fW#¦&rÖVÖW&ÆBÓcFWB×vFR&÷VæFVB×ÂÓ"ãRFWB×6ÒföçB×6VÖ&öÆBG&ç6Föâ×BÓ#à¢z+®¨Ð¢Âö'WGFöãà¢ÂöFcà¢ÂöFcà¢ÂöFcà ¢ÂÒÒfÇW&RÖöFÂÒÓà¢ÆFbCÒ&fÄÖöFÂ"6Æ73Ò&fVBç6WBÓ&rÖ&Æ6²&rÖ÷6GÓC&6¶G&÷Ö&ÇW"×6ÒfÆWFV×2Ö6VçFW"§W7FgÖ6VçFW"¢ÓSFFVâ#à¢ÆFb6Æ73Ò&&r×vFR&÷VæFVBÓ'Â6F÷rÓ'ÂrÖgVÆÂÖ×rÖÖB×ÓB÷fW&fÆ÷rÖFFVâ#à¢ÆFb6Æ73Ò&&rÖw&FVçB×FòÖ'"g&öÒ×&VBÓSFòÖ÷&ævRÓSÓÓrFWBÖ6VçFW"#à¢ÆFb6Æ73Ò'rÓbÓb&r×&VBÓ&÷VæFVBÖgVÆÂfÆWFV×2Ö6VçFW"§W7FgÖ6VçFW"×ÖWFòÖ"ÓB#à¢Ç7fr6Æ73Ò'rÓÓFWB×&VBÓS"fÆÃÒ&æöæR"7G&ö¶SÒ&7W'&VçD6öÆ÷""fWt&÷Ò##B#B#à¢ÇF7G&ö¶RÖÆæV6Ò'&÷VæB"7G&ö¶RÖÆæV¦öãÒ'&÷VæB"7G&ö¶R×vGFÒ#"ãR"CÒ$ÓbÃdÓbfÃ"""óà¢Â÷7fsà¢ÂöFcà¢Æ"6Æ73Ò'FWB×ÂföçBÖ&öÆBFWBÖw&ÓÖ"Ó#îikZ)îZKiYsÂö#à¢Ç6Æ73Ò'FWB×6ÒFWBÖw&ÓS#äY¹îX+>Ùâ#x¸hX¾ûÈÎYXnY8iÊ®[»®z¸³Â÷à¢ÂöFcà¢ÆFb6Æ73Ò'ÓÓR76R×Ó2#à¢ÆFb6Æ73Ò&&r×&VBÓS&÷VæFVB×ÂÓBÓ2#à¢Ç6Æ73Ò'FWB×2föçB×6VÖ&öÆBFWB×&VBÓcÖ"Ó#îÊþªN>h8SÂ÷à¢Ç6Æ73Ò'FWB×6ÒFWB×&VBÓsföçBÖÖöæò"CÒ&fÅ&V6öâ#î(	CÂ÷à¢ÂöFcà¢Ç6Æ73Ò'FWB×2FWBÖw&ÓCFWBÖ6VçFW"#î¸¾z+®¨ÞjÈNKØÞZ¾Zú¾iþY
+njÚ>z+®ûÈÎhnþ{Z{;¾{[zêynY:Â÷à¢Æ'WGFöâöæ6Æ6³Ò&6Æ÷6TÖöFÂvfÄÖöFÂr ¢6Æ73Ò'rÖgVÆÂ&r×&VBÓS÷fW#¦&r×&VBÓcFWB×vFR&÷VæFVB×ÂÓ"ãRFWB×6ÒföçB×6VÖ&öÆBG&ç6Föâ#à¢yÎh¢Âö'WGFöãà¢ÂöFcà¢ÂöFcà¢ÂöFcç&÷VæFVBÖgVÆÂ&rÖVÖW&ÆBÓSFWB×vFRFWB×2föçBÖ&öÆBfÆWFV×2Ö6VçFW"§W7FgÖ6VçFW"s°¢6&6ÆRæææW$DÔÂÒ~)É2s°¢ÒVÇ6RbÓÓÒâ°¢6&6ÆRæ6Æ74æÖRÒwrÓrÓr&÷VæFVBÖgVÆÂ&rÖæFvòÓcFWB×vFRFWB×2föçBÖ&öÆBfÆWFV×2Ö6VçFW"§W7FgÖ6VçFW"s°¢6&6ÆRçFWD6öçFVçBÒ²°¢ÒVÇ6R°¢6&6ÆRæ6Æ74æÖRÒwrÓrÓr&÷VæFVBÖgVÆÂ&rÖw&Ó3FWBÖw&ÓSFWB×2föçBÖ&öÆBfÆWFV×2Ö6VçFW"§W7FgÖ6VçFW"s°¢6&6ÆRçFWD6öçFVçBÒ²°¢Ð¢Ò°¢Ð ¢òò)H)H)HÆörT)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H ¢gVæ7FöâVæDÆörVçG'°¢6öç7BÆörÒFö7VÖVçBævWDVÆVÖVçD'BvÆörr°¢bÆörçVW'6VÆV7F÷"rçFWBÖ6VçFW"rÆöræææW$DÔÂÒrs°¢6öç7B7FGW46öÆ÷"ÒVçG'ç7FGW2ÓÓÒ#òwFWBÖVÖW&ÆBÓc&rÖVÖW&ÆBÓSr¢wFWB×&VBÓc&r×&VBÓSs°¢6öç7BÖWFöD6öÆ÷"ÒVçG'æÖWFöBÓÓÒuõ5Bròv&rÖæFvòÓFWBÖæFvòÓsr¢v&rÖÖ&W"ÓFWBÖÖ&W"Óss°¢6öç7BVÂÒFö7VÖVçBæ7&VFTVÆVÖVçBvFbr°¢VÂæ6Æ74æÖRÒvÖÆörÖFVÒÓbÓBs°¢VÂæææW$DÔÂÒ ¢ÆFb6Æ73Ò&fÆWFV×2×7F'BvÓ2#à¢ÆFb6Æ73Ò&fÆW×6&æ²Ó×BÓãR#à¢Ç7â6Æ73Ò&æÆæRÖfÆWFV×2Ö6VçFW"Ó"ÓãR&÷VæFVBFWB×2föçBÖ&öÆBG¶ÖWFöD6öÆ÷'Ò#âG¶VçG'æÖWFöGÓÂ÷7ãà¢ÂöFcà¢ÆFb6Æ73Ò&fÆWÓÖâ×rÓ#à¢ÆFb6Æ73Ò&fÆWFV×2Ö6VçFW"vÓ"Ö"Ó#à¢Ç7â6Æ73Ò'FWB×6ÒföçBÖÖöæòföçBÖÖVFVÒFWBÖw&ÓG'Væ6FR#âG¶VçG'æVæGöçGÓÂ÷7ãà¢Ç7â6Æ73Ò&fÆW×6&æ²ÓFWB×2föçB×6VÖ&öÆBÓãRÓãR&÷VæFVBG·7FGW46öÆ÷'Ò#âG¶VçG'ç7FGW7ÓÂ÷7ãà¢ÂöFcà¢ÆFb6Æ73Ò&w&Bw&BÖ6öÇ2Ó"vÓ"FWB×2#à¢ÆFcà¢Ç6Æ73Ò'FWBÖw&ÓCföçBÖÖVFVÒÖ"ÓãR#å&WVW7B&öGÂ÷à¢Ç&R6Æ73Ò&&rÖw&ÓS&÷VæFVBÓ"FWBÖw&Óc÷fW&fÆ÷r×ÖWFòFWB×2ÆVFær×&VÆVB#âG´¥4ôâç7G&ævgVçG'ç&WVW7BÂçVÆÂÂ"ÓÂ÷&Sà¢ÂöFcà¢ÆFcà¢Ç6Æ73Ò'FWBÖw&ÓCföçBÖÖVFVÒÖ"ÓãR#å&W7öç6SÂ÷à¢Ç&R6Æ73Ò&&rÖw&ÓS&÷VæFVBÓ"FWBÖw&Óc÷fW&fÆ÷r×ÖWFòFWB×2ÆVFær×&VÆVB#âG´¥4ôâç7G&ævgVçG'ç&W7öç6RÂçVÆÂÂ"ÓÂ÷&Sà¢ÂöFcà¢ÂöFcà¢Ç6Æ73Ò'FWBÖw&ÓCFWB×2×BÓãR#âG¶VçG'çFÖW7F×Ò+rG¶VçG'æGW&FöçÖ×3Â÷à¢ÂöFcà¢ÂöFcæ°¢Æörç&WVæBVÂ° ¢òò6fRFòF66÷fW'66P¢F66÷fW'çW6VçG'°¢G'²Æö6Å7F÷&vRç6WDFVÒv&S%ööF66÷fW'rÂ¥4ôâç7G&ævgF66÷fW'ç6Æ6RÓS²Ò6F6R·Ð¢Ð ¢gVæ7Föâ6ÆV$Æör°¢Fö7VÖVçBævWDVÆVÖVçD'BvÆörræææW$DÔÂÒsÆFb6Æ73Ò'ÓbÓFWBÖ6VçFW"FWB×6ÒFWBÖw&ÓC#î[	®xJ{HÈNûÈÎX{®Yjî[èÎ[~þzK¢YÎXú¾jÎ[ÈóÂöFcâs°¢Ð ¢òò)H)H)HÖö6²gVæ7Föç2)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H ¢7æ2gVæ7FöâÖö6µWÆöDÖvRf÷&ÔFFÂ6÷VÆDfÂ°¢6öç7BCÒFFRææ÷r°¢vB6ÆVWC²ÖFç&æFöÒ¢C°¢6öç7BGW&FöâÒFFRææ÷rÒC°¢b6÷VÆDfÂ°¢6öç7BVçG'Ò°¢ÖWFöC¢uõ5BrÂVæGöçC¢rö÷c"÷WÆöBöÖvRrÀ¢7FGW3¢C#"À¢&WVW7C¢²fÆVæÖS¢f÷&ÔFFæÖvTæÖRÂ6¦Uö'FW3¢f÷&ÔFFæÖvU6¦RÂÖÖU÷GS¢vÖvRö§VrrÒÀ¢&W7öç6S¢²W'&÷#¢tådÄEôdÄUôdõ$ÔBrÂÖW76vS¢~KÞiJþhûNjÚNYÉnx~jÎ[Èþhnj©NjiÞjørÂ6öFS¢C#"ÒÀ¢FÖW7F×¢æ÷rÂGW&Föà¢Ó°¢VæDÆörVçG'°¢F&÷ræWrW'&÷"t3ZKiY~ûÉ¥õ5Bö÷c"÷WÆöBöÖvR(i"C#"ådÄEôdÄUôdõ$ÔBr°¢Ð¢6öç7BÖuW&ÂÒvVäÖuW&Â°¢6öç7BVçG'Ò°¢ÖWFöC¢uõ5BrÂVæGöçC¢rö÷c"÷WÆöBöÖvRrÀ¢7FGW3¢#À¢&WVW7C¢²fÆVæÖS¢f÷&ÔFFæÖvTæÖRÂ6¦Uö'FW3¢f÷&ÔFFæÖvU6¦RÂÖÖU÷GS¢vÖvRö§VrrÒÀ¢&W7öç6S¢²ÖvU÷W&Ã¢ÖuW&ÂÂÖvUöC¢tÔuòr²ÖFç&æFöÒçFõ7G&ær3bç7V'7G&ær"ÃçFõWW$66RÂvGF¢ÂVvC¢cÒÀ¢FÖW7F×¢æ÷rÂGW&Föà¢Ó°¢VæDÆörVçG'°¢&WGW&âÖuW&Ã°¢Ð ¢7æ2gVæ7FöâÖö6´7&VFU&öGV7Bf÷&ÔFFÂÖvUW&ÂÂ6÷VÆDfÂ°¢6öç7BCÒFFRææ÷r°¢vB6ÆVW²ÖFç&æFöÒ¢c°¢6öç7BGW&FöâÒFFRææ÷rÒC°¢6öç7B&W&öGÒ°¢&öGV7EöæÖS¢f÷&ÔFFç&öGV7EöæÖRÀ¢ÆæwVvS¢f÷&ÔFFæÆæwVvRÀ¢6FVv÷'¢f÷&ÔFFæ6FVv÷'À¢6öæf&Õ÷GS¢f÷&ÔFFæ6öæf&Õ÷GRÀ¢çfö6U÷GS¢f÷&ÔFFæçfö6U÷GRÀ¢7W'&Væ7¢f÷&ÔFFæ7W'&Væ7À¢7WÆW#¢f÷&ÔFFç7WÆW"À¢FW7FæFöã¢f÷&ÔFFæFW7FæFöâÀ¢FW67&Föã¢f÷&ÔFFæFW67&FöâÀ¢6÷fW%öÖvU÷W&Ã¢ÖvUW&ÂÀ¢7FGW3¢vG&gBp¢Ó°¢b6÷VÆDfÂ°¢6öç7BVçG'Ò°¢ÖWFöC¢uõ5BrÂVæGöçC¢rö÷c"÷&öGV7Bö7&VFRrÀ¢7FGW3¢CÀ¢&WVW7C¢&W&öGÀ¢&W7öç6S¢²W'&÷#¢tÔ54äuõ$UT$TEôdTÄBrÂÖW76vS¢~[ø^Z¾jÈBKØÞiÊ®Z¾Zú²rÂfVÆG3¢²w7WÆW"uÒÂ6öFS¢CÒÀ¢FÖW7F×¢æ÷rÂGW&Föà¢Ó°¢VæDÆörVçG'°¢F&÷ræWrW'&÷"t3"ZKiY~ûÉ¥õ5Bö÷c"÷&öGV7Bö7&VFR(i"CÔ54äuõ$UT$TEôdTÄBr°¢Ð¢6öç7B&öDöBÒvVå&öDöB°¢6öç7BVçG'Ò°¢ÖWFöC¢uõ5BrÂVæGöçC¢rö÷c"÷&öGV7Bö7&VFRrÀ¢7FGW3¢#À¢&WVW7C¢&W&öGÀ¢&W7öç6S¢²&öEööC¢&öDöBÂ7FGW3¢vG&gBrÂ7&VFVEöC¢æWrFFRçFô4õ7G&ærÒÀ¢FÖW7F×¢æ÷rÂGW&Föà¢Ó°¢VæDÆörVçG'°¢&WGW&â&öDöC°¢Ð ¢7æ2gVæ7FöâÖö6µWFFU6VWB6VWEW&ÂÂ&öDöBÂ&öGV7DæÖRÂ6÷VÆDfÂ°¢6öç7BCÒFFRææ÷r°¢vB6ÆVW²ÖFç&æFöÒ¢3°¢6öç7BGW&FöâÒFFRææ÷rÒC°¢b6VWEW&Â&WGW&ã°¢6öç7B&W&öGÒ²6VWE÷W&Ã¢6VWEW&ÂÂ&öEööC¢&öDöBÂ&öGV7EöæÖS¢&öGV7DæÖRÂw&GFVåöC¢æWrFFRçFô4õ7G&ærÓ°¢b6÷VÆDfÂ°¢6öç7BVçG'Ò°¢ÖWFöC¢uUBrÂVæGöçC¢rö÷c"÷6VWB÷WFFRrÀ¢7FGW3¢C2À¢&WVW7C¢&W&öGÀ¢&W7öç6S¢²W'&÷#¢uU$Ô54ôåôDTäTBrÂÖW76vS¢tvöövÆR6VWBxJZú¾XZ^jÈ®rÂ6öFS¢C2ÒÀ¢FÖW7F×¢æ÷rÂGW&Föà¢Ó°¢VæDÆörVçG'°¢F&÷ræWrW'&÷"t32ZKiY~ûÉ¥UBö÷c"÷6VWB÷WFFR(i"C2U$Ô54ôåôDTäTBr°¢Ð¢6öç7BVçG'Ò°¢ÖWFöC¢uUBrÂVæGöçC¢rö÷c"÷6VWB÷WFFRrÀ¢7FGW3¢#À¢&WVW7C¢&W&öGÀ¢&W7öç6S¢²WFFVE÷&÷w3¢Â&öEööEö6öÇVÖã¢t¢rÂ&÷uöæFW¢ÖFæfÆö÷"ÖFç&æFöÒ¢#²"ÒÀ¢FÖW7F×¢æ÷rÂGW&Föà¢Ó°¢VæDÆörVçG'°¢Ð ¢Fö7VÖVçBævWDVÆVÖVçD'Bw&öGV7Df÷&ÒræFDWfVçDÆ7FVæW"w7V&ÖBrÂ7æ2gVæ7FöâR°¢Rç&WfVçDFVfVÇB°¢6öç7Bf÷&ÒÒRçF&vWC°¢bf÷&Òæ6V6µfÆFG²f÷&Òç&W÷'EfÆFG²&WGW&ã²Ð¢6öç7B6÷VÆDfÂÒFö7VÖVçBævWDVÆVÖVçD'BvfÅFövvÆRræ6V6¶VC°¢7F'EFÖRÒFFRææ÷r°¢6öç7BfBÒ²&öGV7EöæÖS¢f÷&Òç&öGV7EöæÖRçfÇVRÂÆæwVvS¢f÷&ÒæÆæwVvRçfÇVRÂ6FVv÷'¢f÷&Òæ6FVv÷'çfÇVRÂ6öæf&Õ÷GS¢f÷&Òæ6öæf&Õ÷GRçfÇVRÂçfö6U÷GS¢f÷&Òæçfö6U÷GRçfÇVRÂ7W'&Væ7¢f÷&Òæ7W'&Væ7çfÇVRÂ7WÆW#¢f÷&Òç7WÆW"çfÇVRÂFW7FæFöã¢f÷&ÒæFW7FæFöâçfÇVRÂFW67&Föã¢f÷&ÒæFW67&FöâçfÇVRÂ6VWE÷W&Ã¢f÷&Òç6VWE÷W&ÂçfÇVRÂÖvTæÖS¢f÷&ÒæÖvRæfÆW5³ÓòææÖRÇÂvÖvRæ§rrÂÖvU6¦S¢f÷&ÒæÖvRæfÆW5³Óòç6¦RÇÂÓ°¢6öç7B7V&ÖD'FâÒFö7VÖVçBævWDVÆVÖVçD'Bw7V&ÖD'Fâr°¢7V&ÖD'FâæF6&ÆVBÒG'VS°¢7V&ÖD'FâæææW$DÔÂÒsÇ7â6Æ73Ò'7ææW"#ãÂ÷7ãâ^ynKÒâââs°¢G'°¢6WE7FW²6WE&ö6W76ært3ûÉ®X©¾XÉnYXnY8{îYÉbrÂuõ5Bö÷c"÷WÆöBöÖvRr°¢6öç7BÖvUW&ÂÒvBÖö6µWÆöDÖvRfBÂ6÷VÆDfÂ°¢6WE7FW"²6WE&ö6W76ært3.ûÉ®[»®z¸¾YXnY8ØzòrÂuõ5Bö÷c"÷&öGV7Bö7&VFRr°¢6öç7B&öDöBÒvBÖö6´7&VFU&öGV7BfBÂÖvUW&ÂÂ6÷VÆDfÂ°¢6WE7FW2²6WE&ö6W76ært3>ûÉ®Y¹îZ²&öEööB{2vöövÆR6VWBrÂuUBÂö÷c"÷6VWB÷WFFRr°¢vBÖö6µWFFU6VWBfBç6VWE÷W&ÂÂ&öDöBÂfBç&öGV7EöæÖRÂfÇ6R°¢FU&ö6W76ær°¢6öç7BVÆ6VBÒFFRææ÷rÒ7F'EFÖRòçFôfVB°¢Fö7VÖVçBævWDVÆVÖVçD'Bw&öDöDF7ÆrçFWD6öçFVçBÒ&öDöC°¢Fö7VÖVçBævWDVÆVÖVçD'Bv&S$Ææ²ræ&VbÒGG3¢òö&S"ç6Bæ¶¶Fæ6öÒ÷c"÷&öGV7BòG·&öDöGÒöVFB×&öGV7BÖFWFÆ°¢Fö7VÖVçBævWDVÆVÖVçD'BwFÖætF7ÆrçFWD6öçFVçBÒZèÎhi.Y)>ûÉ¢G¶æ÷rÒ+r	~i"G¶VÆ6VGÒzy&°¢Fö7VÖVçBævWDVÆVÖVçD'Bw7V66W74ÖöFÂræ6Æ74Æ7Bç&VÖ÷fRvFFVâr°¢6WE7FW°¢Ò6F6W'"°¢FU&ö6W76ær°¢Fö7VÖVçBævWDVÆVÖVçD'BvfÅ&V6öârçFWD6öçFVçBÒW'"æÖW76vS°¢Fö7VÖVçBævWDVÆVÖVçD'BvfÄÖöFÂræ6Æ74Æ7Bç&VÖ÷fRvFFVâr°¢6WE7FW°¢ÒfæÆÇ°¢7V&ÖD'FâæF6&ÆVBÒfÇ6S°¢7V&ÖD'FâæææW$DÔÂÒsÇ7fr6Æ73Ò'rÓBÓB"fÆÃÒ&æöæR"7G&ö¶SÒ&7W'&VçD6öÆ÷""fWt&÷Ò##B#B#ãÇF7G&ö¶RÖÆæV6Ò'&÷VæB"7G&ö¶RÖÆæV¦öãÒ'&÷VæB"7G&ö¶R×vGFÒ#""CÒ$Ó"GcfÓÓB"óãÂ÷7fsâ[»®z¸¾YXnY8s°¢Ð¢Ò°¢Fö7VÖVçBævWDVÆVÖVçD'Bw&W6WD'FâræFDWfVçDÆ7FVæW"v6Æ6²rÂÓâ6WE7FW°¢Â÷67&Cà£Âö&öGà£ÂöFÖÃà
