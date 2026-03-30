@@ -18,7 +18,7 @@
     .search-box h2 { font-size: 16px; margin-bottom: 16px; color: #0077b6; }
 
     .search-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
-    .field { display: flex; flex-direction: column; gap: 6pz; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
     .field label { font-size: 13px; font-weight: 500; color: #555; }
     .field select, .field input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; min-width: 180px; }
     .field select:focus, .field input:focus { outline: none; border-color: #00b4d8; box-shadow: 0 0 0 3px rgba(0,180,216,0.15); }
@@ -67,17 +67,17 @@
     <!-- Workshop Navigation -->
     <div class="workshop-nav">
       <a href="index.html" class="nav-card active">
-        <div class="nav-icon blue">ð</div>
+        <div class="nav-icon blue">🔍</div>
         <div>
           <div class="nav-label">Supplier Query</div>
-          <div class="nav-desc">æå°ä¾æåè³æ</div>
+          <div class="nav-desc">搜尋供應商資料</div>
         </div>
       </a>
       <a href="be2-create.html" class="nav-card">
-        <div class="nav-icon indigo">ð¦</div>
+        <div class="nav-icon indigo">📦</div>
         <div>
-          <div class="nav-label">BE2 ååå»ºç« Demo</div>
-          <div class="nav-desc">æ¨¡æ¬ååä¸æ¶ + API ç´é</div>
+          <div class="nav-label">BE2 商品建立 Demo</div>
+          <div class="nav-desc">模擬商品上架 + API 紀錄</div>
         </div>
       </a>
     </div>
@@ -121,7 +121,7 @@
       </div>
       <div id="resultBody">
         <div class="placeholder">
-          <div class="icon">ð</div>
+          <div class="icon">🔍</div>
           <p>Please select search filters and click "Search"</p>
         </div>
       </div>
@@ -166,7 +166,7 @@
       const count = document.getElementById("resultCount");
 
       if (results.length === 0) {
-        body.innerHTML = '<div class="placeholder"><div class="icon">ð­</div><p>No suppliers found matching your criteria</p></div>';
+        body.innerHTML = '<div class="placeholder"><div class="icon">📭</div><p>No suppliers found matching your criteria</p></div>';
         count.textContent = "";
         return;
       }
