@@ -90,7 +90,7 @@
     <!-- Form Card -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
       <div class="bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 border-b border-gray-100">
-        <h2 class="text-sm font-semibold text-indigo-800">商品分類資訊</h2>
+        <h2 class="text-sm font-semibold text-indigo-800">商品基本資訊</h2>
         <p class="text-xs text-indigo-500 mt-0.5">填寫完畢後點擊「建立商品」，系統將自動呼叫三支 API 完成上架</p>
       </div>
 
@@ -279,7 +279,7 @@
           <p class="text-xs font-semibold text-red-600 mb-1">錯誤詳情</p>
           <p class="text-sm text-red-700 font-mono" id="failReason">—</p>
         </div>
-        <p class="text-xs text-gray-400 text-center">談確認欄位填寫是否正確，或聯絡系統管理員</p>
+        <p class="text-xs text-gray-400 text-center">請確認欄位填寫是否正確，或聯絡系統管理員</p>
         <button onclick="closeModal('failModal')"
           class="w-full bg-red-500 hover:bg-red-600 text-white rounded-xl py-2.5 text-sm font-semibold transition">
           關閉
@@ -302,7 +302,7 @@
     let apiDiscovery = JSON.parse(localStorage.getItem('be2_api_discovery') || '[]');
     let startTime = null;
 
-    // ─── Image Preview ───────────────────────────────────────────────────────
+    // ─── Image Preview ────────────────────────────────────────────────────────
     document.getElementById('imageInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -314,7 +314,52 @@
         wrap.classList.remove('hidden');
       };
       reader.readAsDataURL(file);
-    });usColor = entry.status === 200 ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50';
+    });
+
+    // ─── Utilities ────────────────────────────────────────────────────────────
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function genProdOid() { return 'PROD_' + Math.random().toString(36).substring(2, 8).toUpperCase(); }
+    function genImgUrl() { return 'https://cdn.kkday.com/assets/' + Math.random().toString(36).substring(2, 10) + '.jpg'; }
+    function now() { return new Date().toLocaleTimeString('zh-TW', {hour12: false}); }
+
+    function setProcessing(text, sub) {
+      document.getElementById('processingText').textContent = text;
+      document.getElementById('processingSubtext').textContent = sub;
+      document.getElementById('processingOverlay').classList.remove('hidden');
+    }
+    function hideProcessing() {
+      document.getElementById('processingOverlay').classList.add('hidden');
+    }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    // ─── Step Indicator ───────────────────────────────────────────────────────
+    function setStep(n) {
+      const steps = [
+        document.getElementById('step1-indicator'),
+        document.getElementById('step2-indicator'),
+        document.getElementById('step3-indicator')
+      ];
+      steps.forEach((s, i) => {
+        s.classList.toggle('opacity-40', i >= n);
+        const circle = s.querySelector('div');
+        if (i < n) {
+          circle.className = 'w-7 h-7 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center';
+          circle.innerHTML = '✓';
+        } else if (i === n) {
+          circle.className = 'w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center';
+          circle.textContent = i + 1;
+        } else {
+          circle.className = 'w-7 h-7 rounded-full bg-gray-300 text-gray-500 text-xs font-bold flex items-center justify-center';
+          circle.textContent = i + 1;
+        }
+      });
+    }
+
+    // ─── API Log UI ───────────────────────────────────────────────────────────
+    function appendLog(entry) {
+      const log = document.getElementById('apiLog');
+      if (log.querySelector('.text-center')) log.innerHTML = '';
+      const statusColor = entry.status === 200 ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50';
       const methodColor = entry.method === 'POST' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700';
       const el = document.createElement('div');
       el.className = 'api-log-item px-6 py-4';
@@ -447,7 +492,7 @@
       appendLog(entry);
     }
 
-    // ─── Form Submit ─────────────────────────────────────────────────────────
+    // ─── Form Submit ──────────────────────────────────────────────────────────
     document.getElementById('productForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const form = e.target;
